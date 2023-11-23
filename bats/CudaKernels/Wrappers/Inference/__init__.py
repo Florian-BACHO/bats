@@ -5,3 +5,4 @@ from .get_sorted_spikes_indices import get_sorted_spikes_indices
 from .get_spike_weights import get_spike_weights
 from .compute_spike_times_conv import compute_spike_times_conv
 from .aggregate_spikes_conv import aggregate_spikes_conv
+from .fuse_inputs import fuse_inputs

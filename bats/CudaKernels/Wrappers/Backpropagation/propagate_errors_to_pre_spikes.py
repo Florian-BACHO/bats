@@ -19,6 +19,16 @@ def propagate_errors_to_pre_spikes(f1: cp.ndarray, f2: cp.ndarray,
     pre_errors = cp.zeros((batch_size, n_pre_neurons, max_n_pre_spike, n_post_neurons), dtype=cp.float32)
     block_dim = (batch_size, 1, 1)
     grid_dim = (n_pre_neurons, max_n_pre_spike, n_post_neurons)
+    if cp.isnan(pre_errors).any():
+        print("pre_errors has nan values")
+    if cp.isnan(f1).any():
+        print("f1 has nan values")
+    if cp.isnan(f2).any():
+        print("f2 has nan values")
+    if cp.isnan(post_times).any():
+        print("post_times has nan values")
+    if cp.isnan(pre_times).any():
+        print("pre_times has nan values")
     __propagate_errors_to_pre_spikes_kernel(grid_dim, block_dim, (f1, f2, post_times, pre_times,
                                                                   pre_exp_tau_s, pre_exp_tau, weights, errors,
                                                                   pre_errors, cp.int32(max_n_post_spike),

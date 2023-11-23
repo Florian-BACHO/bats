@@ -8,8 +8,17 @@ KERNEL_NAME = "compute_factors_kernel"
 
 __compute_factors_kernel = load_kernel(KERNEL_FILE, KERNEL_NAME)
 
+#! This causes a problem that is later fed into compute_weights_gradient
+#! Problem seems to be that f1 contains nan values
+#! fed into this from spike_times that contains nan values
+#! x also contains nan values
+#! exp_tau contains nan values
+#? the question is where does the nan values come from I will now go to LIFFLayerResidual.py to find out, one more method up
 def compute_factors(spike_times: cp.array, a: cp.ndarray, c: cp.float32, x: cp.ndarray, exp_tau: cp.ndarray,
-                    tau: cp.float32) -> Tuple[cp.ndarray, cp.ndarray]:
+                    tau: cp.float32, residual: bool = False) -> Tuple[cp.ndarray, cp.ndarray]:
+    
+    if residual:
+        x=1
     batch_size, n_neurons, max_n_spike = a.shape
 
     f1 = cp.ndarray(a.shape, dtype=cp.float32)

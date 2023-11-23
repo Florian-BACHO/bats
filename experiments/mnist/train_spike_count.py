@@ -1,26 +1,30 @@
 from pathlib import Path
 import cupy as cp
 import numpy as np
+import os
 
 import sys
 
-sys.path.insert(0, "../../")  # Add repository root to python path
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# sys.path.insert(0, "../../")  # Add repository root to python path
 
 from Dataset import Dataset
 from bats.Monitors import *
-from bats.Layers import InputLayer, LIFLayer
+from bats.Layers import InputLayer, LIFLayer, LIFLayerResidual
 from bats.Losses import *
 from bats.Network import Network
 from bats.Optimizers import *
 
 # Dataset
-DATASET_PATH = Path("../../datasets/mnist.npz")
+# DATASET_PATH = Path("../../datasets/mnist.npz")
+DATASET_PATH = Path("./datasets/mnist.npz")
 
 N_INPUTS = 28 * 28
 SIMULATION_TIME = 0.2
 
 # Hidden layer
-N_NEURONS_1 = 800
+N_NEURONS_1 = 64 #!800 #? Should I lower it?
 TAU_S_1 = 0.130
 THRESHOLD_HAT_1 = 0.2
 DELTA_THRESHOLD_1 = 1 * THRESHOLD_HAT_1
@@ -34,8 +38,9 @@ DELTA_THRESHOLD_OUTPUT = 1 * THRESHOLD_HAT_OUTPUT
 SPIKE_BUFFER_SIZE_OUTPUT = 30
 
 # Training parameters
-N_TRAINING_EPOCHS = 100
-N_TRAIN_SAMPLES = 60000
+N_HIDDEN_LAYERS = 10
+N_TRAINING_EPOCHS = 10 #! used to  be 100
+N_TRAIN_SAMPLES = 600 #! used to be 60000
 N_TEST_SAMPLES = 10000
 TRAIN_BATCH_SIZE = 50
 TEST_BATCH_SIZE = 100
@@ -81,14 +86,42 @@ if __name__ == "__main__":
     network = Network()
     input_layer = InputLayer(n_neurons=N_INPUTS, name="Input layer")
     network.add_layer(input_layer, input=True)
+    
+    # TODO: Add more layers here until it breaks
+    hidden_layers = []
+    for i in range(N_HIDDEN_LAYERS):
+        if i == 0:
+            hidden_layer = LIFLayer(previous_layer=input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
+                                    theta=THRESHOLD_HAT_1,
+                                    delta_theta=DELTA_THRESHOLD_1,
+                                    weight_initializer=weight_initializer,
+                                    max_n_spike=SPIKE_BUFFER_SIZE_1,
+                                    name="Hidden layer 0")
 
-    hidden_layer = LIFLayer(previous_layer=input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
-                            theta=THRESHOLD_HAT_1,
-                            delta_theta=DELTA_THRESHOLD_1,
-                            weight_initializer=weight_initializer,
-                            max_n_spike=SPIKE_BUFFER_SIZE_1,
-                            name="Hidden layer 1")
-    network.add_layer(hidden_layer)
+        elif i == 9:
+            hidden_layer = LIFLayerResidual(previous_layer=hidden_layers[i-1], jump_layer= input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
+                                    theta=THRESHOLD_HAT_1,
+                                    delta_theta=DELTA_THRESHOLD_1,
+                                    weight_initializer=weight_initializer,
+                                    max_n_spike=SPIKE_BUFFER_SIZE_1,
+                                    name="Hidden layer " + str(i))
+        else:
+            hidden_layer = LIFLayer(previous_layer=hidden_layers[i-1], n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
+                                    theta=THRESHOLD_HAT_1,
+                                    delta_theta=DELTA_THRESHOLD_1,
+                                    weight_initializer=weight_initializer,
+                                    max_n_spike=SPIKE_BUFFER_SIZE_1,
+                                    name="Hidden layer " + str(i))
+        hidden_layers.append(hidden_layer)
+        network.add_layer(hidden_layer)
+        
+    # hidden_layer = LIFLayer(previous_layer=input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
+    #                         theta=THRESHOLD_HAT_1,
+    #                         delta_theta=DELTA_THRESHOLD_1,
+    #                         weight_initializer=weight_initializer,
+    #                         max_n_spike=SPIKE_BUFFER_SIZE_1,
+    #                         name="Hidden layer 1")
+    # network.add_layer(hidden_layer)
 
     output_layer = LIFLayer(previous_layer=hidden_layer, n_neurons=N_OUTPUTS, tau_s=TAU_S_OUTPUT,
                             theta=THRESHOLD_HAT_OUTPUT,
@@ -141,6 +174,7 @@ if __name__ == "__main__":
             optimizer.learning_rate = np.maximum(LR_DECAY_FACTOR * optimizer.learning_rate, MIN_LEARNING_RATE)
 
         for batch_idx in range(N_TRAIN_BATCH):
+            # print("batch_idx: ", batch_idx)
             # Get next batch
             spikes, n_spikes, labels = dataset.get_train_batch(batch_idx, TRAIN_BATCH_SIZE)
 

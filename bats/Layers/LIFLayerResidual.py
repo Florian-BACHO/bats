@@ -8,11 +8,12 @@ from bats.CudaKernels.Wrappers.Inference import *
 from bats.CudaKernels.Wrappers.Backpropagation import *
 
 
-class LIFLayer(AbstractLayer):
-    def __init__(self, previous_layer: AbstractLayer, tau_s: float, theta: float, delta_theta: float,
+class LIFLayerResidual(AbstractLayer):
+    def __init__(self, previous_layer: AbstractLayer, jump_layer: AbstractLayer, tau_s: float, theta: float, delta_theta: float,
                  weight_initializer: Callable[[int, int], cp.ndarray] = None, max_n_spike: int = 32, **kwargs):
         super().__init__(**kwargs)
         self.__previous_layer: AbstractLayer = previous_layer
+        self.__previous_layer_residual: AbstractLayer = jump_layer
         self.__tau_s: cp.float32 = cp.float32(tau_s)
         self.__tau: cp.float32 = cp.float32(2 * tau_s)
         self.__theta_tau: cp.float32 = cp.float32(theta / self.__tau)
@@ -64,9 +65,18 @@ class LIFLayer(AbstractLayer):
         #? What are these two variables?
         #? How is it per neuron? (50, 784, 1)=>shape of spike_times_per_neuron on first stop of debugger
         #? It seems to be the number of spikes per layer, not per neuron, as there where 784 neurons in the input layer
-        pre_spike_per_neuron, pre_n_spike_per_neuron = self.__previous_layer.spike_trains
+        pre_spike_per_neuron_residual, pre_n_spike_per_neuron_residual = self.__previous_layer.spike_trains
+
+        #We will try just adding them together
+        jump_connection_spikes, jump_connection_spike_count = self.__previous_layer_residual.spike_trains
+
+        #> pre_spike_per_neuron is a vector with the spike times of the previous layer
+
+        pre_spike_per_neuron = fuse_inputs(pre_spike_per_neuron_residual, jump_connection_spikes)
+        pre_n_spike_per_neuron = cp.append(pre_n_spike_per_neuron_residual, jump_connection_spike_count, axis=1)
 
         self.__pre_exp_tau_s, self.__pre_exp_tau = compute_pre_exps(pre_spike_per_neuron, self.__tau_s, self.__tau)
+        # self.__pre_exp_tau_s_residual, self.__pre_exp_tau_residual = compute_pre_exps(pre_spike_per_neuron_residual, self.__tau_s, self.__tau)
         # END OF PREVIOUS LAYER INPUTS
 
         # Sort spikes for inference
@@ -96,29 +106,48 @@ class LIFLayer(AbstractLayer):
             self.__post_exp_tau = compute_spike_times(sorted_spike_times, sorted_pre_exp_tau_s, sorted_pre_exp_tau,
                                                       pre_spike_weights, self.__c,
                                                       self.__delta_theta_tau,
-                                                      self.__tau, cp.float32(max_simulation), self.__max_n_spike)
-            # break point here in order to see if normal layers have any NaN values
-            # FOUND: No NaN values in normal layers
-            w = 0
+                                                      self.__tau, cp.float32(max_simulation), self.__max_n_spike, residual = True)
+            if np.isnan(self.__n_spike_per_neuron).any() or np.isnan(self.__spike_times_per_neuron).any() or np.isnan(self.__a).any() or np.isnan(self.__x).any() or np.isnan(self.__post_exp_tau).any():
+                # Some spikes are not computed
+                # I just could replace the nan values with the max_simulation value
+                # But I am not sure if this is the right thing to do
+                # I think the problem is in the kernel
+                # I am going to do it anyway
+                w =0
+            w =0
+            
 
     def backward(self, errors: cp.array) -> Optional[Tuple[cp.ndarray, cp.ndarray]]:
         # Compute gradient
-        pre_spike_per_neuron, _ = self.__previous_layer.spike_trains
+        # pre_spike_per_neuron, _ = self.__previous_layer.spike_trains
+
+        pre_spike_per_neuron_residual, _ = self.__previous_layer.spike_trains
+
+        #We will try just adding them together
+        jump_connection_spikes, _ = self.__previous_layer_residual.spike_trains
+
+        #> pre_spike_per_neuron is a vector with the spike times of the previous layer
+
+        pre_spike_per_neuron = fuse_inputs(pre_spike_per_neuron_residual, jump_connection_spikes)
+
+
         propagate_recurrent_errors(self.__x, self.__post_exp_tau, errors, self.__delta_theta_tau)
         f1, f2 = compute_factors(self.__spike_times_per_neuron, self.__a, self.__c, self.__x,
-                                 self.__post_exp_tau, self.__tau)
+                                 self.__post_exp_tau, self.__tau,residual=True)
 
         weights_grad = compute_weights_gradient(f1, f2, self.__spike_times_per_neuron, pre_spike_per_neuron,
                                                 self.__pre_exp_tau_s, self.__pre_exp_tau, errors)
         # Propagate errors
         if self.__previous_layer.trainable:
-            pre_errors = propagate_errors_to_pre_spikes(f1, f2, self.__spike_times_per_neuron, pre_spike_per_neuron,
+            pre_errors = propagate_errors_to_pre_spikes(f1, f2, self.__spike_times_per_neuron, pre_spike_per_neuron, #!
                                                         self.__pre_exp_tau_s, self.__pre_exp_tau, self.__weights,
                                                         errors, self.__tau_s, self.__tau)
         else:
             pre_errors = None
 
+        #! I believe the problem is with weights_grad as it is used in Network.py backwards and pre_errors is not
         return weights_grad, pre_errors
 
     def add_deltas(self, delta_weights: cp.ndarray) -> None:
+        #!Why are the last two or three entries of delta_weights nan?
         self.__weights += delta_weights
