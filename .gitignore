@@ -3,3 +3,4 @@
 *.npy
 *.png
 *.npz
+wandb/

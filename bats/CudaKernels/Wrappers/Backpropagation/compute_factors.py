@@ -5,6 +5,7 @@ from bats.CudaKernels.load_kernel import load_kernel
 
 KERNEL_FILE = "Backpropagation/compute_factors.cu"
 KERNEL_NAME = "compute_factors_kernel"
+PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT = 10
 
 __compute_factors_kernel = load_kernel(KERNEL_FILE, KERNEL_NAME)
 
@@ -18,7 +19,7 @@ def compute_factors(spike_times: cp.array, a: cp.ndarray, c: cp.float32, x: cp.n
                     tau: cp.float32, residual: bool = False) -> Tuple[cp.ndarray, cp.ndarray]:
     
     if residual:
-        x=1
+        xfasknfakl=1
     batch_size, n_neurons, max_n_spike = a.shape
 
     f1 = cp.ndarray(a.shape, dtype=cp.float32)
@@ -26,6 +27,7 @@ def compute_factors(spike_times: cp.array, a: cp.ndarray, c: cp.float32, x: cp.n
     block_dim = (batch_size, 1, 1)
     grid_dim = (max_n_spike, n_neurons, 2)
 
+    #! Errors found here count: 1 (With BREAKPOINTS)
     __compute_factors_kernel(grid_dim, block_dim, (spike_times, a, c, x, exp_tau, tau,
                                                    f1, f2))
     return f1, f2

@@ -18,10 +18,11 @@ class LIFLayerResidual(AbstractLayer):
         self.__tau: cp.float32 = cp.float32(2 * tau_s)
         self.__theta_tau: cp.float32 = cp.float32(theta / self.__tau)
         self.__delta_theta_tau: cp.float32 = cp.float32(delta_theta / self.__tau)
+        #TODO: Change the initial state of the weights
         if weight_initializer is None:
-            self.__weights: cp.ndarray = cp.zeros((self.n_neurons, previous_layer.n_neurons), dtype=cp.float32)
+            self.__weights: cp.ndarray = cp.zeros((self.n_neurons, previous_layer.n_neurons + jump_layer.n_neurons), dtype=cp.float32)
         else:
-            self.__weights: cp.ndarray = weight_initializer(self.n_neurons, previous_layer.n_neurons)
+            self.__weights: cp.ndarray = weight_initializer(self.n_neurons, previous_layer.n_neurons + jump_layer.n_neurons)
         self.__max_n_spike: cp.int32 = cp.int32(max_n_spike)
 
         self.__n_spike_per_neuron: Optional[cp.ndarray] = None
@@ -131,7 +132,7 @@ class LIFLayerResidual(AbstractLayer):
         pre_spike_per_neuron = fuse_inputs(pre_spike_per_neuron_residual, jump_connection_spikes)
 
 
-        propagate_recurrent_errors(self.__x, self.__post_exp_tau, errors, self.__delta_theta_tau)
+        propagate_recurrent_errors(self.__x, self.__post_exp_tau, errors, self.__delta_theta_tau, residual = True)
         f1, f2 = compute_factors(self.__spike_times_per_neuron, self.__a, self.__c, self.__x,
                                  self.__post_exp_tau, self.__tau,residual=True)
 

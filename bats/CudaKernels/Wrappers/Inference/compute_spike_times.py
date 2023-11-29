@@ -39,22 +39,22 @@ def compute_spike_times(spike_times: cp.ndarray,
     #     x = 0
     __compute_spike_times_kernel(grid_dim, block_dim, args)
 
-    if np.isnan(post_spike_times).any(): # np.isnan(a).any() or np.isnan(x).any() or np.isnan(n_spikes).any() or 
-        # Some spikes are not computed
-        # I just could replace the nan values with the max_simulation value
-        # But I am not sure if this is the right thing to do
-        # I think the problem is in the kernel
-        # I am going to do it anyway
-        #TODO: check if this is the right thing to do and improve on it
-        post_spike_times= cp.nan_to_num(post_spike_times, nan=cp.inf, posinf=cp.inf)
+    # if np.isnan(post_spike_times).any():
+    #     # Some spikes are not computed
+    #     # I just could replace the nan values with the max_simulation value
+    #     # But I am not sure if this is the right thing to do
+    #     # I think the problem is in the kernel
+    #     # I am going to do it anyway
+    #     #TODO: check if this is the right thing to do and improve on it -> APPARENTLY NOT NEEDED XD
+    #     post_spike_times= cp.nan_to_num(post_spike_times, nan=cp.inf, posinf=cp.inf)
         
-    if np.isnan(x).any():
-        x= cp.nan_to_num(x, nan=cp.inf, posinf=cp.inf)
+    # if np.isnan(x).any():
+    #     x= cp.nan_to_num(x, nan=cp.inf, posinf=cp.inf)
     
-    if np.isnan(a).any():
-        a= cp.nan_to_num(a, nan=cp.inf, posinf=cp.inf)
+    # if np.isnan(a).any():
+    #     a= cp.nan_to_num(a, nan=cp.inf, posinf=cp.inf)
     
-    if np.isnan(post_exp_tau).any():
-        post_exp_tau= cp.nan_to_num(post_exp_tau, nan=cp.inf, posinf=cp.inf)
+    # if np.isnan(post_exp_tau).any():
+    #     post_exp_tau= cp.nan_to_num(post_exp_tau, nan=cp.inf, posinf=cp.inf)
 
     return n_spikes, a, x, post_spike_times, post_exp_tau

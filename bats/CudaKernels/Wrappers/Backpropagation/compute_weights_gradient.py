@@ -20,22 +20,23 @@ def compute_weights_gradient(f1: cp.ndarray, f2: cp.ndarray,
     block_dim = (batch_size, 1, 1)
     grid_dim = (n_post_neurons, n_pre_neurons)
     #! Check for NaNs
-    if np.isnan(gradient).any():
-        print("gradient has nan values")
-    if cp.isnan(f1).any():
-        print("f1 has nan values")
-    if cp.isnan(f2).any():
-        print("f2 has nan values")
-    if cp.isnan(post_times).any():
-        print("post_times has nan values")
-    if cp.isnan(pre_times).any():
-        print("pre_times has nan values")
-    if cp.isnan(pre_exp_tau_s).any():
-        print("pre_exp_tau_s has nan values")
-    if cp.isnan(pre_exp_tau).any():
-        print("pre_exp_tau has nan values")
-    if cp.isnan(errors).any():
-        print("errors has nan values")
+    # if cp.isnan(gradient).any():
+    #     print("gradient has nan values")
+    # if cp.isnan(f1).any():
+    #     print("f1 has nan values")
+    # if cp.isnan(f2).any():
+    #     print("f2 has nan values")
+    # if cp.isnan(post_times).any():
+    #     print("post_times has nan values")
+    # if cp.isnan(pre_times).any():
+    #     print("pre_times has nan values")
+    # if cp.isnan(pre_exp_tau_s).any():
+    #     print("pre_exp_tau_s has nan values")
+    # if cp.isnan(pre_exp_tau).any():
+    #     print("pre_exp_tau has nan values")
+    # if cp.isnan(errors).any():
+    #     print("errors has nan values")
+    #! errors found here: 2 (With breakpoints)
     __compute_weights_gradient_kernel(grid_dim, block_dim, (f1, f2, post_times, pre_times,
                                                             pre_exp_tau_s, pre_exp_tau, errors,
                                                             gradient, cp.int32(max_n_post_spike),

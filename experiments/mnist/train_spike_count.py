@@ -2,7 +2,8 @@ from pathlib import Path
 import cupy as cp
 import numpy as np
 import os
-
+import wandb
+import random
 import sys
 
 # sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -24,7 +25,7 @@ N_INPUTS = 28 * 28
 SIMULATION_TIME = 0.2
 
 # Hidden layer
-N_NEURONS_1 = 64 #!800 #? Should I lower it?
+N_NEURONS_1 = 240 #!800 #? Should I lower it?
 TAU_S_1 = 0.130
 THRESHOLD_HAT_1 = 0.2
 DELTA_THRESHOLD_1 = 1 * THRESHOLD_HAT_1
@@ -37,12 +38,15 @@ THRESHOLD_HAT_OUTPUT = 1.3
 DELTA_THRESHOLD_OUTPUT = 1 * THRESHOLD_HAT_OUTPUT
 SPIKE_BUFFER_SIZE_OUTPUT = 30
 
+#Residual parameters
+USE_RESIDUAL = True
+RESIDUAL_EVERY_N = 5
+N_HIDDEN_LAYERS = 15
 # Training parameters
-N_HIDDEN_LAYERS = 10
 N_TRAINING_EPOCHS = 10 #! used to  be 100
-N_TRAIN_SAMPLES = 600 #! used to be 60000
-N_TEST_SAMPLES = 10000
-TRAIN_BATCH_SIZE = 50
+N_TRAIN_SAMPLES = 6000 #! used to be 60000
+N_TEST_SAMPLES = 1000 #! used to be 10000	
+TRAIN_BATCH_SIZE = 50 #! used to be 50
 TEST_BATCH_SIZE = 100
 N_TRAIN_BATCH = int(N_TRAIN_SAMPLES / TRAIN_BATCH_SIZE)
 N_TEST_BATCH = int(N_TEST_SAMPLES / TEST_BATCH_SIZE)
@@ -59,8 +63,29 @@ TARGET_TRUE = 15
 
 # Plot parameters
 EXPORT_METRICS = True
-EXPORT_DIR = Path("./output_metrics")
-SAVE_DIR = Path("./best_model")
+EXPORT_DIR = Path("./experiments/mnist/output_metrics")
+SAVE_DIR = Path("./experiments/mnist/best_model")
+
+#Weights and biases
+# start a new wandb run to track this script
+wandb.init(
+    # set the wandb project where this run will be logged
+    project="Residual-SNN",
+    
+    # track hyperparameters and run metadata
+    config={
+    "N_HIDDEN_LAYERS": N_HIDDEN_LAYERS,
+    "train_batch_size": TRAIN_BATCH_SIZE,
+    "residual_every_n": RESIDUAL_EVERY_N,
+    "use_residual": USE_RESIDUAL,
+    "n_neurons": N_NEURONS_1,
+    "learning_rate": LEARNING_RATE,
+    "architecture": "SNN",
+    "dataset": "MNIST",
+    "epochs": N_TRAINING_EPOCHS,
+    }
+)
+
 
 
 def weight_initializer(n_post: int, n_pre: int) -> cp.ndarray:
@@ -82,12 +107,14 @@ if __name__ == "__main__":
     print("Loading datasets...")
     dataset = Dataset(path=DATASET_PATH)
 
+
+    
+    #Building the network
     print("Creating network...")
     network = Network()
     input_layer = InputLayer(n_neurons=N_INPUTS, name="Input layer")
     network.add_layer(input_layer, input=True)
-    
-    # TODO: Add more layers here until it breaks
+
     hidden_layers = []
     for i in range(N_HIDDEN_LAYERS):
         if i == 0:
@@ -98,13 +125,13 @@ if __name__ == "__main__":
                                     max_n_spike=SPIKE_BUFFER_SIZE_1,
                                     name="Hidden layer 0")
 
-        elif i == 9:
+        elif (i == N_HIDDEN_LAYERS - 1 or i % RESIDUAL_EVERY_N ==0) and N_HIDDEN_LAYERS > 5 and USE_RESIDUAL:
             hidden_layer = LIFLayerResidual(previous_layer=hidden_layers[i-1], jump_layer= input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
                                     theta=THRESHOLD_HAT_1,
                                     delta_theta=DELTA_THRESHOLD_1,
                                     weight_initializer=weight_initializer,
                                     max_n_spike=SPIKE_BUFFER_SIZE_1,
-                                    name="Hidden layer " + str(i))
+                                    name="Residual layer " + str(i))
         else:
             hidden_layer = LIFLayer(previous_layer=hidden_layers[i-1], n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
                                     theta=THRESHOLD_HAT_1,
@@ -114,14 +141,6 @@ if __name__ == "__main__":
                                     name="Hidden layer " + str(i))
         hidden_layers.append(hidden_layer)
         network.add_layer(hidden_layer)
-        
-    # hidden_layer = LIFLayer(previous_layer=input_layer, n_neurons=N_NEURONS_1, tau_s=TAU_S_1,
-    #                         theta=THRESHOLD_HAT_1,
-    #                         delta_theta=DELTA_THRESHOLD_1,
-    #                         weight_initializer=weight_initializer,
-    #                         max_n_spike=SPIKE_BUFFER_SIZE_1,
-    #                         name="Hidden layer 1")
-    # network.add_layer(hidden_layer)
 
     output_layer = LIFLayer(previous_layer=hidden_layer, n_neurons=N_OUTPUTS, tau_s=TAU_S_OUTPUT,
                             theta=THRESHOLD_HAT_OUTPUT,
@@ -130,6 +149,7 @@ if __name__ == "__main__":
                             max_n_spike=SPIKE_BUFFER_SIZE_OUTPUT,
                             name="Output layer")
     network.add_layer(output_layer)
+    #End of network building
 
     loss_fct = SpikeCountClassLoss(target_false=TARGET_FALSE, target_true=TARGET_TRUE)
     optimizer = AdamOptimizer(learning_rate=LEARNING_RATE)
@@ -148,12 +168,14 @@ if __name__ == "__main__":
 
     test_loss_monitor = LossMonitor(export_path=EXPORT_DIR / "loss_test")
     test_accuracy_monitor = AccuracyMonitor(export_path=EXPORT_DIR / "accuracy_test")
+
+    
     test_learning_rate_monitor = ValueMonitor(name="Learning rate", decimal=5)
     # Only monitor LIF layers
-    test_spike_counts_monitors = {l: SpikeCountMonitor(l.name) for l in network.layers if isinstance(l, LIFLayer)}
-    test_silent_monitors = {l: SilentNeuronsMonitor(l.name) for l in network.layers if isinstance(l, LIFLayer)}
+    test_spike_counts_monitors = {l: SpikeCountMonitor(l.name) for l in network.layers if isinstance(l, LIFLayer) or isinstance(l, LIFLayerResidual)}
+    test_silent_monitors = {l: SilentNeuronsMonitor(l.name) for l in network.layers if isinstance(l, LIFLayer) or isinstance(l, LIFLayerResidual)}
     test_norm_monitors = {l: WeightsNormMonitor(l.name, export_path=EXPORT_DIR / ("weight_norm_" + l.name))
-                          for l in network.layers if isinstance(l, LIFLayer)}
+                          for l in network.layers if isinstance(l, LIFLayer) or isinstance(l, LIFLayerResidual)}
     test_time_monitor = TimeMonitor()
     all_test_monitors = [test_loss_monitor, test_accuracy_monitor, test_learning_rate_monitor]
     all_test_monitors.extend(test_spike_counts_monitors.values())
@@ -252,7 +274,12 @@ if __name__ == "__main__":
                 test_monitors_manager.export()
 
                 acc = records[test_accuracy_monitor]
+                loss_to_save = records[test_loss_monitor]
+                wandb.log({"acc": acc, "loss": loss_to_save})
+
                 if acc > best_acc:
                     best_acc = acc
                     network.store(SAVE_DIR)
                     print(f"Best accuracy: {np.around(best_acc, 2)}%, Networks save to: {SAVE_DIR}")
+
+wandb.finish()

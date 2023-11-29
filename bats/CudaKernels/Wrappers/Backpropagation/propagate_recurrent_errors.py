@@ -7,7 +7,11 @@ KERNEL_NAME = "propagate_recurrent_errors_kernel"
 __propagate_recurrent_errors_kernel = load_kernel(KERNEL_FILE, KERNEL_NAME)
 
 def propagate_recurrent_errors(x: cp.ndarray, exp_tau: cp.ndarray, errors: cp.ndarray,
-                               delta_theta_tau: cp.float32) -> None:
+                               delta_theta_tau: cp.float32, residual: bool = False) -> None:
+    
+    if residual:
+        xqwewe = 1
+
     batch_size, n_neurons, max_n_spike = errors.shape
 
     block_dim = (batch_size, 1, 1)

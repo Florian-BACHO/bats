@@ -99,7 +99,8 @@ class LIFLayer(AbstractLayer):
                                                       self.__tau, cp.float32(max_simulation), self.__max_n_spike)
             # break point here in order to see if normal layers have any NaN values
             # FOUND: No NaN values in normal layers
-            w = 0
+            if self.name == 'Output layer':
+                w = 0
 
     def backward(self, errors: cp.array) -> Optional[Tuple[cp.ndarray, cp.ndarray]]:
         # Compute gradient
