@@ -63,11 +63,11 @@ TARGET_TRUE = 15
 
 best_acc_array = []
 
-for i in range(10):
+for c in range(10):
 
     # Plot parameters
     EXPORT_METRICS = True
-    EXPORT_DIR = Path("./experiments/mnist/output_metrics_REAL"+"-" + str(USE_RESIDUAL)+"-" +str(N_HIDDEN_LAYERS)+"-"+" hidden every " +str(RESIDUAL_EVERY_N) + " "+str(i) +"th")
+    EXPORT_DIR = Path("./experiments/mnist/output_metrics_REAL"+"-" + str(USE_RESIDUAL)+"-" +str(N_HIDDEN_LAYERS)+"-"+" hidden every " +str(RESIDUAL_EVERY_N) + " "+str(c) +"th")
     SAVE_DIR = Path("./experiments/mnist/best_model")
 
     #Weights and biases
@@ -82,11 +82,14 @@ for i in range(10):
         "train_batch_size": TRAIN_BATCH_SIZE,
         "residual_every_n": RESIDUAL_EVERY_N,
         "use_residual": USE_RESIDUAL,
+        "n_of_train_samples": N_TRAIN_SAMPLES,
+        "n_of_test_samples": N_TEST_SAMPLES,
         "n_neurons": N_NEURONS_1,
         "learning_rate": LEARNING_RATE,
         "architecture": "SNN",
         "dataset": "MNIST",
         "epochs": N_TRAINING_EPOCHS,
+        "version": "1.0.0",
         }
     )
 
@@ -302,10 +305,14 @@ for i in range(10):
                         network.store(SAVE_DIR)
                         print(f"Best accuracy: {np.around(best_acc, 2)}%, Networks save to: {SAVE_DIR}")
         best_acc_array.append(best_acc)    
+        
+        print("Best accuracy: ", best_acc)
+        with open('avg_acc.txt', 'a') as f:
+            string = "Best accuracy of "+c+": " +  str(best_acc) + "\n" + "-------------------------------------"+"\n"
 
     wandb.finish()
 
-#Write average accuracy to file
+# Write average accuracy to file
 avg_acc = np.mean(best_acc_array)
 print("Average accuracy: ", avg_acc)
 with open('avg_acc.txt', 'a') as f:
