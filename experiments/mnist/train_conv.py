@@ -1,10 +1,11 @@
 from pathlib import Path
 import cupy as cp
 import numpy as np
+import os
 
 import sys
 
-sys.path.insert(0, "../../")  # Add repository root to python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from Dataset import Dataset
 from bats.Monitors import *
@@ -14,10 +15,11 @@ from bats.Network import Network
 from bats.Optimizers import *
 from bats.Layers.ConvInputLayer import ConvInputLayer
 from bats.Layers.ConvLIFLayer import ConvLIFLayer
+from bats.Layers.ConvLIFLayerResidual import ConvLIFLayerResidual
 from bats.Layers.PoolingLayer import PoolingLayer
 
 # Dataset
-DATASET_PATH = Path("../../datasets/mnist.npz")
+DATASET_PATH = Path("./datasets/mnist.npz")
 
 INPUT_SHAPE = np.array([28, 28, 1])
 N_INPUTS = 28 * 28
@@ -69,8 +71,8 @@ TARGET_TRUE = 30
 
 # Plot parameters
 EXPORT_METRICS = True
-EXPORT_DIR = Path("./output_metrics")
-SAVE_DIR = Path("./best_model")
+EXPORT_DIR = Path("./experiments/mnist/output_metrics_conv")
+SAVE_DIR = Path("./experiments/mnist/best_model_conv")
 
 
 def weight_initializer_conv(c: int, x: int, y: int, pre_c: int) -> cp.ndarray:
@@ -112,7 +114,7 @@ if __name__ == "__main__":
     pool_1 = PoolingLayer(conv_1, name="Pooling 1")
     network.add_layer(pool_1)
 
-    conv_2 = ConvLIFLayer(previous_layer=pool_1, filters_shape=FILTER_2, tau_s=TAU_S_2,
+    conv_2 = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
                           theta=THRESHOLD_HAT_2,
                           delta_theta=DELTA_THRESHOLD_2,
                           weight_initializer=weight_initializer_conv,

@@ -39,9 +39,9 @@ DELTA_THRESHOLD_OUTPUT = 1 * THRESHOLD_HAT_OUTPUT
 SPIKE_BUFFER_SIZE_OUTPUT = 30
 
 #Residual parameters
-USE_RESIDUAL = False
-RESIDUAL_EVERY_N = 200
-N_HIDDEN_LAYERS = 1
+USE_RESIDUAL = True
+RESIDUAL_EVERY_N = 5
+N_HIDDEN_LAYERS = 20
 # Training parameters
 N_TRAINING_EPOCHS = 10 #! used to  be 100
 N_TRAIN_SAMPLES = 6000 #! used to be 60000
@@ -67,7 +67,7 @@ for c in range(10):
 
     # Plot parameters
     EXPORT_METRICS = True
-    EXPORT_DIR = Path("./experiments/mnist/output_metrics_REAL"+"-" + str(USE_RESIDUAL)+"-" +str(N_HIDDEN_LAYERS)+"-"+" hidden every " +str(RESIDUAL_EVERY_N) + " "+str(c) +"th")
+    EXPORT_DIR = Path("./experiments/mnist/output_metrics_REAL"+"-" + str(USE_RESIDUAL)+"-" +str(N_HIDDEN_LAYERS)+"-"+" hidden every " +str(RESIDUAL_EVERY_N) + " "+str(c) +"th Version 2")
     SAVE_DIR = Path("./experiments/mnist/best_model")
 
     #Weights and biases
@@ -308,7 +308,7 @@ for c in range(10):
         
         print("Best accuracy: ", best_acc)
         with open('avg_acc.txt', 'a') as f:
-            string = "Best accuracy of "+c+": " +  str(best_acc) + "\n" + "-------------------------------------"+"\n"
+            string = "Best accuracy of "+str(c)+": " +  str(best_acc) + "\n" + "-------------------------------------"+"\n"
 
     wandb.finish()
 
