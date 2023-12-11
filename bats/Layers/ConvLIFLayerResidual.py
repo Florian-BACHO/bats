@@ -15,6 +15,7 @@ from bats.CudaKernels.Wrappers.Inference.compute_spike_times_conv import compute
 class ConvLIFLayerResidual(AbstractConvLayer):
     def __init__(self, previous_layer: AbstractConvLayer, previous_layer_residual: AbstractConvLayer, filters_shape: np.ndarray, tau_s: float, theta: float,
                  delta_theta: float,
+                 delay: float = 0.0,
                  weight_initializer: Callable[[int, int, int, int], cp.ndarray] = None, max_n_spike: int = 32,
                  **kwargs):
         prev_x, prev_y, prev_c = previous_layer._neurons_shape.get()
@@ -28,6 +29,7 @@ class ConvLIFLayerResidual(AbstractConvLayer):
         self.__filters_shape = cp.array([filter_c, filter_x, filter_y, prev_c], dtype=cp.int32)
         self.__previous_layer: AbstractConvLayer = previous_layer
         #added
+        self.__learned_delay = cp.int32(delay)
         self.__previous_layer_residual: AbstractConvLayer = previous_layer_residual
         self.__tau_s: cp.float32 = cp.float32(tau_s)
         self.__tau: cp.float32 = cp.float32(2 * tau_s)

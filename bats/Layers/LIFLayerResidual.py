@@ -138,6 +138,7 @@ class LIFLayerResidual(AbstractLayer):
 
         weights_grad = compute_weights_gradient(f1, f2, self.__spike_times_per_neuron, pre_spike_per_neuron,
                                                 self.__pre_exp_tau_s, self.__pre_exp_tau, errors)
+        #TODO: delay_grad = compute_delay_gradient()
         # Propagate errors
         if self.__previous_layer.trainable:
             pre_errors = propagate_errors_to_pre_spikes(f1, f2, self.__spike_times_per_neuron, pre_spike_per_neuron, #!
