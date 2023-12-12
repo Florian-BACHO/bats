@@ -55,12 +55,12 @@ SPIKE_BUFFER_SIZE_OUTPUT = 30
 #Residual controls
 N_HIDDEN_LAYERS = 3
 USE_RESIDUAL = True
-RESIDUAL_EVERY_N = 1
+RESIDUAL_EVERY_N = 5
 
 
 # Training parameters
 N_TRAINING_EPOCHS = 10
-N_TRAIN_SAMPLES = 60000 #60000
+N_TRAIN_SAMPLES = 60000 #60000  
 N_TEST_SAMPLES = 10000
 TRAIN_BATCH_SIZE = 20
 TEST_BATCH_SIZE = 50
@@ -156,14 +156,14 @@ if __name__ == "__main__":
                           name="Convolution" + str(i))
             
         elif i == N_HIDDEN_LAYERS - 1 and USE_RESIDUAL:
-            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= hidden_layers[i-RESIDUAL_EVERY_N], filters_shape=FILTER_2, tau_s=TAU_S_2,
+            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
                           theta=THRESHOLD_HAT_2,
                           delta_theta=DELTA_THRESHOLD_2,
                           weight_initializer=weight_initializer_conv,
                           max_n_spike=SPIKE_BUFFER_SIZE_2,
                           name="Convolution residual:" + str(i))
         elif i % RESIDUAL_EVERY_N ==0 and USE_RESIDUAL:
-            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
+            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= hidden_layers[i-RESIDUAL_EVERY_N], filters_shape=FILTER_2, tau_s=TAU_S_2,
                           theta=THRESHOLD_HAT_2,
                           delta_theta=DELTA_THRESHOLD_2,
                           weight_initializer=weight_initializer_conv,
@@ -194,15 +194,15 @@ if __name__ == "__main__":
 
 
 
-    feedforward = LIFLayer(previous_layer=pool_i, n_neurons=N_NEURONS_FC, tau_s=TAU_S_FC,
-                           theta=THRESHOLD_HAT_FC,
-                           delta_theta=DELTA_THRESHOLD_FC,
-                           weight_initializer=weight_initializer_ff,
-                           max_n_spike=SPIKE_BUFFER_SIZE_FC,
-                           name="Feedforward 1")
-    network.add_layer(feedforward)
+    # feedforward = LIFLayer(previous_layer=pool_i, n_neurons=N_NEURONS_FC, tau_s=TAU_S_FC,
+    #                        theta=THRESHOLD_HAT_FC,
+    #                        delta_theta=DELTA_THRESHOLD_FC,
+    #                        weight_initializer=weight_initializer_ff,
+    #                        max_n_spike=SPIKE_BUFFER_SIZE_FC,
+    #                        name="Feedforward 1")
+    # network.add_layer(feedforward)
 
-    output_layer = LIFLayer(previous_layer=feedforward, n_neurons=N_OUTPUTS, tau_s=TAU_S_OUTPUT,
+    output_layer = LIFLayer(previous_layer=pool_i, n_neurons=N_OUTPUTS, tau_s=TAU_S_OUTPUT,
                             theta=THRESHOLD_HAT_OUTPUT,
                             delta_theta=DELTA_THRESHOLD_OUTPUT,
                             weight_initializer=weight_initializer_ff,
