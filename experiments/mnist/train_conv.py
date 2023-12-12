@@ -1,5 +1,6 @@
 from pathlib import Path
 import cupy as cp
+import wandb
 import numpy as np
 import os
 
@@ -50,6 +51,13 @@ THRESHOLD_HAT_OUTPUT = 0.3
 DELTA_THRESHOLD_OUTPUT = 1 * THRESHOLD_HAT_OUTPUT
 SPIKE_BUFFER_SIZE_OUTPUT = 30
 
+
+#Residual controls
+N_HIDDEN_LAYERS = 3
+USE_RESIDUAL = True
+RESIDUAL_EVERY_N = 1
+
+
 # Training parameters
 N_TRAINING_EPOCHS = 10
 N_TRAIN_SAMPLES = 60000 #60000
@@ -74,6 +82,28 @@ EXPORT_METRICS = True
 EXPORT_DIR = Path("./experiments/mnist/output_metrics_conv")
 SAVE_DIR = Path("./experiments/mnist/best_model_conv")
 
+
+wandb.init(
+        # set the wandb project where this run will be logged
+        project="Residual-SNN",
+        
+        # track hyperparameters and run metadata4
+        config={
+        "Network Type": "Convolution Network",
+        "N_HIDDEN_LAYERS": N_HIDDEN_LAYERS,
+        "train_batch_size": TRAIN_BATCH_SIZE,
+        "residual_every_n": RESIDUAL_EVERY_N,
+        "use_residual": USE_RESIDUAL,
+        "n_of_train_samples": N_TRAIN_SAMPLES,
+        "n_of_test_samples": N_TEST_SAMPLES,
+        "n_neurons": N_NEURONS_FC,
+        "learning_rate": LEARNING_RATE,
+        "architecture": "SNN",
+        "dataset": "MNIST",
+        "epochs": N_TRAINING_EPOCHS,
+        "version": "1.0.0",
+        }
+    )
 
 def weight_initializer_conv(c: int, x: int, y: int, pre_c: int) -> cp.ndarray:
     return cp.random.uniform(-1.0, 1.0, size=(c, x, y, pre_c), dtype=cp.float32)
@@ -114,18 +144,57 @@ if __name__ == "__main__":
     pool_1 = PoolingLayer(conv_1, name="Pooling 1")
     network.add_layer(pool_1)
 
-    conv_2 = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
+
+    hidden_layers = []
+    for i in range(N_HIDDEN_LAYERS):
+        if i == 0:
+            hidden_layer = ConvLIFLayer(previous_layer=pool_1, filters_shape=FILTER_1, tau_s=TAU_S_1,
+                          theta=THRESHOLD_HAT_1,
+                          delta_theta=DELTA_THRESHOLD_1,
+                          weight_initializer=weight_initializer_conv,
+                          max_n_spike=SPIKE_BUFFER_SIZE_1,
+                          name="Convolution" + str(i))
+            
+        elif i == N_HIDDEN_LAYERS - 1 and USE_RESIDUAL:
+            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= hidden_layers[i-RESIDUAL_EVERY_N], filters_shape=FILTER_2, tau_s=TAU_S_2,
                           theta=THRESHOLD_HAT_2,
                           delta_theta=DELTA_THRESHOLD_2,
                           weight_initializer=weight_initializer_conv,
                           max_n_spike=SPIKE_BUFFER_SIZE_2,
-                          name="Convolution 2")
-    network.add_layer(conv_2)
+                          name="Convolution residual:" + str(i))
+        elif i % RESIDUAL_EVERY_N ==0 and USE_RESIDUAL:
+            hidden_layer = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
+                          theta=THRESHOLD_HAT_2,
+                          delta_theta=DELTA_THRESHOLD_2,
+                          weight_initializer=weight_initializer_conv,
+                          max_n_spike=SPIKE_BUFFER_SIZE_2,
+                          name="Convolution residual:" + str(i))
+        else:
+            hidden_layer = ConvLIFLayer(previous_layer=pool_1, filters_shape=FILTER_1, tau_s=TAU_S_1,
+                          theta=THRESHOLD_HAT_1,
+                          delta_theta=DELTA_THRESHOLD_1,
+                          weight_initializer=weight_initializer_conv,
+                          max_n_spike=SPIKE_BUFFER_SIZE_1,
+                          name="Convolution" + str(i))
+        hidden_layers.append(hidden_layer)
+        network.add_layer(hidden_layer)
 
-    pool_2 = PoolingLayer(conv_2, name="Pooling 2")
-    network.add_layer(pool_2)
+        pool_i = PoolingLayer(hidden_layer, name="Pooling" + str(i))
+        network.add_layer(pool_i)
 
-    feedforward = LIFLayer(previous_layer=pool_2, n_neurons=N_NEURONS_FC, tau_s=TAU_S_FC,
+
+
+    # conv_2 = ConvLIFLayerResidual(previous_layer=pool_1, previous_layer_residual= input_layer, filters_shape=FILTER_2, tau_s=TAU_S_2,
+    #                       theta=THRESHOLD_HAT_2,
+    #                       delta_theta=DELTA_THRESHOLD_2,
+    #                       weight_initializer=weight_initializer_conv,
+    #                       max_n_spike=SPIKE_BUFFER_SIZE_2,
+    #                       name="Convolution 2")
+    # network.add_layer(conv_2)
+
+
+
+    feedforward = LIFLayer(previous_layer=pool_i, n_neurons=N_NEURONS_FC, tau_s=TAU_S_FC,
                            theta=THRESHOLD_HAT_FC,
                            delta_theta=DELTA_THRESHOLD_FC,
                            weight_initializer=weight_initializer_ff,
@@ -261,3 +330,4 @@ if __name__ == "__main__":
                     best_acc = acc
                     network.store(SAVE_DIR)
                     print(f"Best accuracy: {np.around(best_acc, 2)}%, Networks save to: {SAVE_DIR}")
+wandb.finish()
