@@ -7,10 +7,10 @@ Fuse the inputs of two layers into one input that can be fed to the next layer.
 def fuse_inputs(residual_input, jump_input, delay = 0):
     batch_size_res, n_neurons_res, max_n_spike_res = residual_input.shape
     batch_size_jump, n_neurons_jump, max_n_spike_jump = jump_input.shape
-    for input in residual_input:
-        for spike in input:
-                for t in spike:
-                     t = t + delay
+    # for input in residual_input:
+    #     for spike in input:
+    #             for t in spike:
+    #                  t = t + delay
 
     if batch_size_res != batch_size_jump:
         raise ValueError("Batch size of residual and jump connection must be the same.")
