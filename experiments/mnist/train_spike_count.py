@@ -25,7 +25,7 @@ N_INPUTS = 28 * 28
 SIMULATION_TIME = 0.2
 
 # Hidden layer
-N_NEURONS_1 = 240 #!800 #? Should I lower it?
+N_NEURONS_1 = 800 #!800 #? Should I lower it?
 TAU_S_1 = 0.130
 THRESHOLD_HAT_1 = 0.2
 DELTA_THRESHOLD_1 = 1 * THRESHOLD_HAT_1
@@ -41,11 +41,11 @@ SPIKE_BUFFER_SIZE_OUTPUT = 30
 #Residual parameters
 USE_RESIDUAL = True
 RESIDUAL_EVERY_N = 50
-N_HIDDEN_LAYERS = 17
+N_HIDDEN_LAYERS = 5
 # Training parameters
 N_TRAINING_EPOCHS = 100 #! used to  be 100
 N_TRAIN_SAMPLES = 60000 #! used to be 60000
-N_TEST_SAMPLES = 1000 #! used to be 10000	
+N_TEST_SAMPLES = 10000 #! used to be 10000	
 TRAIN_BATCH_SIZE = 50 #! used to be 50
 TEST_BATCH_SIZE = 100
 N_TRAIN_BATCH = int(N_TRAIN_SAMPLES / TRAIN_BATCH_SIZE)
@@ -63,8 +63,9 @@ TARGET_TRUE = 15
 
 best_acc_array = []
 
-for c in range(10):
-
+for c in range(20):
+    if c > 9:
+        USE_RESIDUAL = False
     # Plot parameters
     EXPORT_METRICS = True
     EXPORT_DIR = Path("./experiments/mnist/output_metrics_REAL"+"-" + str(USE_RESIDUAL)+"-" +str(N_HIDDEN_LAYERS)+"-"+" hidden every " +str(RESIDUAL_EVERY_N) + " "+str(c) +"th Version 2")
@@ -89,7 +90,7 @@ for c in range(10):
         "architecture": "SNN",
         "dataset": "MNIST",
         "epochs": N_TRAINING_EPOCHS,
-        "version": "1.0.0",
+        "version": "1.0.1",
         }
     )
 
