@@ -12,4 +12,4 @@ SBATCH --mail-type=END
 module use /opt/insy/modulefiles
 module load cuda/12.0
 
-srun python experiments/minst/train_spike_count.py
+srun python experiments/mnist/train_spike_count.py
