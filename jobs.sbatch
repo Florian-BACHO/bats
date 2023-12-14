@@ -1,4 +1,4 @@
-!/bin/sh
+#!/bin/sh
 
 #SBATCH --partition=general
 #SBATCH --qos=short
