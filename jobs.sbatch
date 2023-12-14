@@ -10,6 +10,7 @@ SBATCH --mail-type=END
 #SBATCH --gres=gpu
 
 module use /opt/insy/modulefiles
+module load miniconda/3.9
 module load cuda/12.0
 
 srun python experiments/mnist/train_spike_count.py
