@@ -2,12 +2,12 @@
 
 #SBATCH --partition=general
 #SBATCH --qos=short
-# sbatch --time=8:00:00
-# sbatch --ntasks=1
+# SBATCH --time=8:00:00
+# SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=6144
-# sbatch --mail-type=END
-# sbatch --gres=gpu
+# SBATCH --mail-type=END
+# SBATCH --gres=gpu
 
 module use /opt/insy/modulefiles
 module load miniconda/3.9
