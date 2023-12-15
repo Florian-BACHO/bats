@@ -12,7 +12,7 @@ source ~/.bashrc
 
 module use /opt/insy/modulefiles
 module load miniconda/3.9
-# module load cuda/12.0
-conda activate /home/nfs/adelossantossu/.conda/envs/pytorch
+module load cuda/12.0
+# conda activate /home/nfs/adelossantossu/.conda/envs/pytorch
 
-srun python experiments/mnist/train_spike_count.py --gres=gpu --chdir=./ --mail-type=END
+srun python experiments/mnist/train_spike_count.py --gres=gpu --mail-type=END
