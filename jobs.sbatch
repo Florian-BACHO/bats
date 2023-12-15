@@ -8,6 +8,7 @@
 #SBATCH --mem=6144
 # SBATCH --mail-type=END
 # SBATCH --gres=gpu
+source ~/.bashrc
 
 module use /opt/insy/modulefiles
 module load miniconda/3.9
