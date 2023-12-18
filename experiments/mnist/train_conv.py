@@ -33,6 +33,7 @@ DELTA_THRESHOLD_1 = 1 * THRESHOLD_HAT_1
 SPIKE_BUFFER_SIZE_1 = 1
 
 FILTER_2 = np.array([5, 5, 40])
+#make these lower
 TAU_S_2 = 0.130
 THRESHOLD_HAT_2 = 0.8
 DELTA_THRESHOLD_2 = 1 * THRESHOLD_HAT_2
@@ -82,6 +83,8 @@ EXPORT_METRICS = True
 EXPORT_DIR = Path("./experiments/mnist/output_metrics_conv")
 SAVE_DIR = Path("./experiments/mnist/best_model_conv")
 
+#TODO: Look for the padding
+#TODO: Modify to use -> https://www.cs.toronto.edu/~kriz/cifar.html 
 
 wandb.init(
         # set the wandb project where this run will be logged

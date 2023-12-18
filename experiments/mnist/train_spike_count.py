@@ -63,7 +63,7 @@ TARGET_TRUE = 15
 
 best_acc_array = []
 
-for c in range(20):
+for c in range(1):
     if c > 9:
         USE_RESIDUAL = False
     # Plot parameters
@@ -264,6 +264,16 @@ for c in range(20):
                     train_monitors_manager.record(epoch_metrics)
                     train_monitors_manager.print(epoch_metrics)
                     train_monitors_manager.export()
+                    out_spikes, n_out_spikes = network.output_spike_trains
+                    mask = cp.isinf(out_spikes)
+                    out_spikes[mask] = cp.nan
+                    mean_spikes_for_times = cp.nanmean(out_spikes)
+                    first_spike_for_times = cp.nanmin(out_spikes)
+                    print(f'Output layer mean times: {mean_spikes_for_times}')
+                    print(f'Output layer first spike: {first_spike_for_times}')
+                    with open('times.txt', 'a') as f:
+                        string = f'Train Step Number: {training_steps/TRAIN_PRINT_PERIOD_STEP}' + "\n"+ f'Output layer mean times: {mean_spikes_for_times}' + "\n" + f'Output layer first spike: {first_spike_for_times}' + "\n" + "-------------------------------------"+"\n"
+                        f.write(string)
 
                 # Test evaluation
                 if training_steps % TEST_PERIOD_STEP == 0:
@@ -307,10 +317,9 @@ for c in range(20):
                         print(f"Best accuracy: {np.around(best_acc, 2)}%, Networks save to: {SAVE_DIR}")
         best_acc_array.append(best_acc)    
         
-        print("Best accuracy: ", best_acc)
-        with open('avg_acc.txt', 'a') as f:
-            string = "Best accuracy of "+str(c)+": " +  str(best_acc) + "\n" + "-------------------------------------"+"\n"
-
+    with open('times.txt', 'a') as f:
+        string =f'End of run: {c}'+ "\n"
+        f.write(string)
     wandb.finish()
 
 # Write average accuracy to file
