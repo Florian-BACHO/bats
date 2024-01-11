@@ -6,4 +6,4 @@
 # *.sbatch
 wandb/
 experiments/mnist/avg_acc.txt
-experiments/mnist/avg_acc.txt
+times.txt
